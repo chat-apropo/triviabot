@@ -201,7 +201,8 @@ class triviabot(irc.IRCClient):
                      "I'm sorry, answers must be given in the game channel.")
             return
         self._gmsg("{} GOT IT!".format(user.upper()))
-        self._gmsg("""If there was any doubt, the correct answer was: {}""".format(self._answer.answer))
+        self._gmsg("""If there was any doubt, the correct answer was: {}""".format(
+            self._answer.answer))
         try:
             self._scores[user] += self._current_points
         except:
@@ -435,7 +436,8 @@ class triviabot(irc.IRCClient):
         if not self._lc.running:
             self._gmsg("We are not playing right now.")
             return
-        self._gmsg("Question has been skipped. The answer was: {}".format(self._answer.answer))
+        self._gmsg("Question has been skipped. The answer was: {}".format(
+            self._answer.answer))
         self._clue_number = 0
         self._lc.stop()
         self._lc.start(config.WAIT_INTERVAL)
@@ -447,7 +449,7 @@ class triviabot(irc.IRCClient):
         TODO: order them.
         '''
         self._cmsg(user, "The current trivia standings are: ")
-        sorted_scores = sorted(self._scores.iteritems(), key=lambda (k, v): (v, k), reverse=True)
+        sorted_scores = sorted(self._scores.iteritems(), key=lambda k, v: (v, k), reverse=True)
         for rank, (player, score) in enumerate(sorted_scores, start=1):
             formatted_score = "{}: {}: {}".format(rank, player, score)
             self._cmsg(user, formatted_score)
