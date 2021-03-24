@@ -46,3 +46,5 @@ SERVER = 'irc.freenode.net'
 # to your IRC network, you may have to disable SSL or change the server port
 SERVER_PORT = 6667
 USE_SSL = "YES"
+ 
+LANG = 'en'
