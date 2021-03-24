@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+# -*- coding: utf-8 -*-
 # Copyright (C) 2013 Joe Rawson
 #
 # This program is free software: you can redistribute it and/or modify
@@ -36,6 +36,8 @@ from twisted.internet.task import LoopingCall
 from lib.answer import Answer
 
 import config
+from strings import genTrans
+text = genTrans(config.LANG)
 
 if not os.path.exists(config.SAVE_DIR):
     os.makedirs(config.SAVE_DIR)
@@ -78,11 +80,10 @@ class triviabot(irc.IRCClient):
         self._load_game()
         self._votes = 0
         self._voters = []
+        self.nickname = config.DEFAULT_NICK
 
     def _get_nickname(self):
         return self.factory.nickname
-
-    nickname = property(_get_nickname)
 
     def _get_lineRate(self):
         return self.factory.lineRate
@@ -117,26 +118,29 @@ class triviabot(irc.IRCClient):
             self._voters = []
             self._get_new_question()
             self._current_points = points[self._clue_number]
-            # Blank line.
-            self._gmsg("")
-            self._gmsg("Next question:")
+            self._gmsg(text.NEXT)
             self._gmsg(self._question)
-            self._gmsg("Clue: {}".format(self._answer.current_clue()))
+            self._gmsg(text.CLUE.format(self._answer.current_clue()))
             self._clue_number += 1
         # we must be somewhere in between
         elif self._clue_number < 4:
             self._current_points = points[self._clue_number]
-            self._gmsg("Question:")
+            self._gmsg(text.QUESTION)
             self._gmsg(self._question)
-            self._gmsg("Clue: {}".format(self._answer.give_clue()))
+            self._gmsg(text.GIVE_CLUE.format(self._answer.give_clue()))
             self._clue_number += 1
         # no one must have gotten it.
         else:
-            self._gmsg("No one got it. The answer was: {}"
-                       .format(self._answer.answer))
             self._clue_number = 0
+            self._gmsg(text.NO_ONE_GOT.format(self._answer.answer))
+            self._votes = 0
+            self._voters = []
             self._get_new_question()
-            # self._lc.reset()
+            self._current_points = points[self._clue_number]
+            self._gmsg(text.NEXT)
+            self._gmsg(self._question)
+            self._gmsg(text.CLUE.format(self._answer.current_clue()))
+            self._clue_number += 1
 
     def signedOn(self):
         '''
@@ -148,10 +152,10 @@ class triviabot(irc.IRCClient):
         if self.factory.running:
             self._start(None, None, None)
         else:
-            self._gmsg("Welcome to {}!".format(self._game_channel))
-            self._gmsg("Have an admin start the game when you are ready.")
-            self._gmsg("For how to use this bot, just say ?help or")
-            self._gmsg("{} help.".format(self.nickname))
+            self._gmsg(text.WELCOME.format(self._game_channel))
+            self._gmsg(text.HAVE_AN_ADMIN)
+            self._gmsg(text.HAVE_HELP)
+            self._gmsg(text.HELP.format(self.nickname))
 
     def joined(self, channel):
         '''
@@ -172,9 +176,9 @@ class triviabot(irc.IRCClient):
 
         # parses each incoming line, and sees if it's a command for the bot.
         try:
-            if (msg[0] == "?"):
-                command = msg.replace('?', '').split()[0]
-                args = msg.replace('?', '').split()[1:]
+            if (msg[0] == "!"):
+                command = msg.replace('!', '').split()[0]
+                args = msg.replace('!', '').split()[1:]
                 self.select_command(command, args, user, channel)
                 return
             elif (msg.split()[0].find(self.nickname) == 0):
@@ -197,22 +201,19 @@ class triviabot(irc.IRCClient):
         points appropriately, then signals that it was guessed.
         '''
         if channel != self._game_channel:
-            self.msg(channel,
-                     "I'm sorry, answers must be given in the game channel.")
+            self.msg(channel, text.RESPOND_ON_CHANNEL)
             return
-        self._gmsg("{} GOT IT!".format(user.upper()))
-        self._gmsg("""If there was any doubt, the correct answer was: {}""".format(
+        self._gmsg(text.USER_GOT_IT.format(user.upper()))
+        self._gmsg(text.THE_ANSWER_WAS.format(
             self._answer.answer))
         try:
             self._scores[user] += self._current_points
         except:
             self._scores[user] = self._current_points
         if self._current_points == 1:
-            self._gmsg("{} point has been added to your score!"
-                       .format(str(self._current_points)))
+            self._gmsg(text.POINT_ADDED.format(str(self._current_points)))
         else:
-            self._gmsg("{} points have been added to your score!"
-                       .format(str(self._current_points)))
+            self._gmsg(text.POINTS_ADDED.format(str(self._current_points)))
         self._clue_number = 0
         self._lc.stop()
         self._lc.start(config.WAIT_INTERVAL)
@@ -235,15 +236,12 @@ class triviabot(irc.IRCClient):
         try:
             self._admins.index(user)
         except:
-            self._cmsg(user, "I'm {}'s trivia bot.".format(config.OWNER))
-            self._cmsg(user, "Commands: score, standings, giveclue, help, "
-                       "next, source")
+            self._cmsg(user, text.BELONG.format(config.OWNER))
+            self._cmsg(user, text.COMMANDS)
             return
-        self._cmsg(user, "I'm {}'s trivia bot.".format(config.OWNER))
-        self._cmsg(user, "Commands: score, standings, giveclue, help, next, "
-                   "skip, source")
-        self._cmsg(user, "Admin commands: die, set <user> <score>, start, stop, "
-                   "save")
+        self._cmsg(user, text.BELONG.format(config.OWNER))
+        self._cmsg(user, text.COMMANDS)
+        self._cmsg(user, text.ADMIN_CMDS)
 
     def _show_source(self, args, user, channel):
         '''
@@ -252,7 +250,7 @@ class triviabot(irc.IRCClient):
         progress.
         '''
         self._cmsg(user, 'My source can be found at: '
-                   'https://github.com/rawsonj/triviabot')
+                   "https://github.com/matheusfillipe/triviabot")
 
     def select_command(self, command, args, user, channel):
         '''
@@ -266,9 +264,8 @@ class triviabot(irc.IRCClient):
                                   'help': self._help,
                                   'source': self._show_source,
                                   'standings': self._standings,
-                                  'giveclue': self._give_clue,
+                                  'repeat': self._give_clue,
                                   'next': self._next_vote,
-                                  'skip': self._next_question
                                   }
         priviledged_commands = {'die': self._die,
                                 'restart': self._restart,
@@ -276,6 +273,7 @@ class triviabot(irc.IRCClient):
                                 'start': self._start,
                                 'stop': self._stop,
                                 'save': self._save_game,
+                                'skip': self._next_question
                                 }
         print(command, args, user, channel)
         try:
@@ -287,16 +285,15 @@ class triviabot(irc.IRCClient):
         # the following takes care of sorting out functions and
         # priviledges.
         if not is_admin and command in priviledged_commands:
-            self.msg(channel, "{}: You don't tell me what to do."
-                     .format(user))
+            self.msg(channel, text.NOT_ALLOWED.format(user))
             return
         elif is_admin and command in priviledged_commands:
             priviledged_commands[command](args, user, channel)
         elif command in unpriviledged_commands:
             unpriviledged_commands[command](args, user, channel)
         else:
-            self.describe(channel, "{}looks at {} oddly."
-                          .format(config.COLOR_CODE, user))
+            self.describe(channel, text.LOOKS_ODLY.format(
+                config.COLOR_CODE, user))
 
     def _next_vote(self, args, user, channel):
         '''Implements user voting for the next question.
@@ -305,20 +302,18 @@ class triviabot(irc.IRCClient):
 
         '''
         if not self._lc.running:
-            self._gmsg("We aren't playing right now.")
+            self._gmsg(text.NOT_PLAYING)
             return
         try:
             self._voters.index(user)
-            self._gmsg("You already voted, {}, give someone else a chance to "
-                       "hate this question".format(user))
+            self._gmsg(text.ALREADY_VOTED.format(user))
             return
         except:
             if self._votes < 2:
                 self._votes += 1
                 self._voters.append(user)
                 print(self._voters)
-                self._gmsg("{}, you have voted. {} more votes needed to "
-                           "skip.".format(user, str(3 - self._votes)))
+                self._gmsg(text.YOU_VOTED.format(user, str(3 - self._votes)))
             else:
                 self._votes = 0
                 self._voters = []
@@ -345,10 +340,10 @@ class triviabot(irc.IRCClient):
             return
         else:
             self._lc.stop()
-            self._gmsg('Thanks for playing trivia!')
-            self._gmsg('Current rankings were:')
+            self._gmsg(text.THANKS)
+            self._gmsg(text.RANKINGS)
             self._standings(None, self._game_channel, None)
-            self._gmsg('''Scores have been saved, and see you next game!''')
+            self._gmsg(text.SEE_YOU)
             self._save_game()
             self.factory.running = False
 
@@ -424,19 +419,18 @@ class triviabot(irc.IRCClient):
         Tells the user their score.
         '''
         try:
-            self._cmsg(user, "Your current score is: {}"
-                       .format(str(self._scores[user])))
+            self._cmsg(user, text.SCORE.format(str(self._scores[user])))
         except:
-            self._cmsg(user, "You aren't in my database.")
+            self._cmsg(user, TEXT.IDKU)
 
     def _next_question(self, args, user, channel):
         '''
         Administratively skips the current question.
         '''
         if not self._lc.running:
-            self._gmsg("We are not playing right now.")
+            self._gmsg(text.NOT_PLAYING)
             return
-        self._gmsg("Question has been skipped. The answer was: {}".format(
+        self._gmsg(text.SKIPPED_THE_ANSWER_WAS.format(
             self._answer.answer))
         self._clue_number = 0
         self._lc.stop()
@@ -445,22 +439,28 @@ class triviabot(irc.IRCClient):
     def _standings(self, args, user, channel):
         '''
         Tells the user the complete standings in the game.
-
-        TODO: order them.
         '''
-        self._cmsg(user, "The current trivia standings are: ")
-        sorted_scores = sorted(self._scores.iteritems(), key=lambda k, v: (v, k), reverse=True)
+        from future.utils import iteritems
+        self._cmsg(user, text.STANDINGS)
+        sorted_scores = sorted(iteritems(self._scores),
+                               key=lambda d: d[1], reverse=True)
+
+        i = 0
+        end = int(args[0]) - 1 if len(args) else 9
         for rank, (player, score) in enumerate(sorted_scores, start=1):
             formatted_score = "{}: {}: {}".format(rank, player, score)
             self._cmsg(user, formatted_score)
+            i += 1
+            if i > end:
+                break
 
     def _give_clue(self, args, user, channel):
         if not self._lc.running:
-            self._gmsg("we are not playing right now.")
+            self._gmsg(text.NOT_PLAYING)
             return
-        self._cmsg(channel, "Question: ")
+        self._cmsg(channel, text.QUESTION)
         self._cmsg(channel, self._question)
-        self._cmsg(channel, "Clue: " + self._answer.current_clue())
+        self._cmsg(channel, text.CLUE.format(self._answer.current_clue()))
 
     def _get_new_question(self):
         '''
@@ -482,6 +482,7 @@ class triviabot(irc.IRCClient):
                 print(myline)
                 continue
             self._answer.set_answer(temp_answer.strip())
+            print("Choosed question")
             damaged_question = False
 
 
