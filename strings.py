@@ -36,6 +36,8 @@ class Text:
     TIMMING = {EN: "{} has given the answer in {}.{} seconds.", RO: "{} a dat răspunsul corect în {}.{} secunde."}
     RANKING = {EN: "{} has now {} points and is the {}th in the ranking after {}.", RO: "{} are acum {} puncte şi este al {}-lea în clasament după {}."}
     NUMBER_ONE = {EN: "{} now has {} and is number one in the rankings.", RO: "{} are acum {} şi este pe locul întâi in clasament."}
+    RANK_OFF = {EN: "Rank was turned off"}
+    RANK_ON = {EN: "Rank was turned on"}
 
 
 def genTrans(lang):

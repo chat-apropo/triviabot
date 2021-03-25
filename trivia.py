@@ -75,6 +75,7 @@ class triviabot(irc.IRCClient):
         self._question = ''
         self._scores = {}
         self._clue_number = 0
+        self._block_rank = False
         self._admins = list(config.ADMINS)
         self._admins.append(config.OWNER)
         self._game_channel = config.GAME_CHANNEL
@@ -112,7 +113,6 @@ class triviabot(irc.IRCClient):
 
     def _new_question(self):
         self._clue_number = 0
-        self._start_time = datetime.now()
         self._votes = 0
         self._voters = []
         self._get_new_question()
@@ -121,6 +121,7 @@ class triviabot(irc.IRCClient):
         self._gmsg(self._question)
         self._gmsg(text.CLUE.format(self._answer.current_clue()))
         self._clue_number += 1
+        self._start_time = datetime.now()
 
     def _play_game(self):
         '''
@@ -261,6 +262,14 @@ class triviabot(irc.IRCClient):
         self._cmsg(user, 'My source can be found at: '
                    "https://github.com/matheusfillipe/triviabot")
 
+    def set_rank_block(self, b, args, user, channel):
+        self._block_rank = b
+        if b:
+            self._cmsg(user, text.RANK_OFF)
+        else:
+            self._cmsg(user, text.RANK_ON )
+
+
     def select_command(self, command, args, user, channel):
         '''
         Callback that responds to commands given to the bot.
@@ -282,6 +291,8 @@ class triviabot(irc.IRCClient):
                                 'start': self._start,
                                 'stop': self._stop,
                                 'save': self._save_game,
+                                'rankon': lambda  a, u, c: self.set_rank_block(False, a, u, c),
+                                'rankoff': lambda a, u, c: self.set_rank_block(True, a, u, c),
                                 'skip': self._next_question
                                 }
         print(command, args, user, channel)
@@ -463,6 +474,9 @@ class triviabot(irc.IRCClient):
         '''
         Tells the user the complete standings in the game.
         '''
+        if self._block_rank:
+            return
+
         from future.utils import iteritems
         self._cmsg(user, text.STANDINGS)
         sorted_scores = sorted(iteritems(self._scores),
