@@ -26,6 +26,7 @@ import json
 import string
 import os
 import sys
+from datetime import datetime
 from os import execl, listdir, path, makedirs
 from random import choice
 from twisted.words.protocols import irc
@@ -54,6 +55,11 @@ try:
 except:
     config.COLOR_CODE = ''
 
+points = {0: 5,
+          1: 3,
+          2: 2,
+          3: 1
+          }
 
 class triviabot(irc.IRCClient):
     '''
@@ -104,24 +110,24 @@ class triviabot(irc.IRCClient):
 
         self._cmsg(self._game_channel, msg)
 
+    def _new_question(self):
+        self._clue_number = 0
+        self._start_time = datetime.now()
+        self._votes = 0
+        self._voters = []
+        self._get_new_question()
+        self._current_points = points[self._clue_number]
+        self._gmsg(text.NEXT)
+        self._gmsg(self._question)
+        self._gmsg(text.CLUE.format(self._answer.current_clue()))
+        self._clue_number += 1
+
     def _play_game(self):
         '''
         Implements the main loop of the game.
         '''
-        points = {0: 5,
-                  1: 3,
-                  2: 2,
-                  3: 1
-                  }
         if self._clue_number == 0:
-            self._votes = 0
-            self._voters = []
-            self._get_new_question()
-            self._current_points = points[self._clue_number]
-            self._gmsg(text.NEXT)
-            self._gmsg(self._question)
-            self._gmsg(text.CLUE.format(self._answer.current_clue()))
-            self._clue_number += 1
+            self._new_question()
         # we must be somewhere in between
         elif self._clue_number < 4:
             self._current_points = points[self._clue_number]
@@ -131,16 +137,8 @@ class triviabot(irc.IRCClient):
             self._clue_number += 1
         # no one must have gotten it.
         else:
-            self._clue_number = 0
             self._gmsg(text.NO_ONE_GOT.format(self._answer.answer))
-            self._votes = 0
-            self._voters = []
-            self._get_new_question()
-            self._current_points = points[self._clue_number]
-            self._gmsg(text.NEXT)
-            self._gmsg(self._question)
-            self._gmsg(text.CLUE.format(self._answer.current_clue()))
-            self._clue_number += 1
+            self._new_question()
 
     def signedOn(self):
         '''
@@ -204,8 +202,7 @@ class triviabot(irc.IRCClient):
             self.msg(channel, text.RESPOND_ON_CHANNEL)
             return
         self._gmsg(text.USER_GOT_IT.format(user.upper()))
-        self._gmsg(text.THE_ANSWER_WAS.format(
-            self._answer.answer))
+        self._gmsg(text.THE_ANSWER_WAS.format(self._answer.answer))
         try:
             self._scores[user] += self._current_points
         except:
@@ -215,6 +212,18 @@ class triviabot(irc.IRCClient):
         else:
             self._gmsg(text.POINTS_ADDED.format(str(self._current_points)))
         self._clue_number = 0
+
+        rank, score, after = self._get_rank(user)      
+        if rank:
+            if not after and rank == 1:
+                self._gmsg(text.NUMBER_ONE.format(user, score))
+            else:
+                self._gmsg(text.RANKING.format(user, score, rank, after))
+            
+        time = datetime.now()-self._start_time
+        self._gmsg(text.TIMMING.format(user, time.seconds, round(time.microseconds/10000)))
+
+        #Restart loop
         self._lc.stop()
         self._lc.start(config.WAIT_INTERVAL)
 
@@ -263,7 +272,7 @@ class triviabot(irc.IRCClient):
         unpriviledged_commands = {'score': self._score,
                                   'help': self._help,
                                   'source': self._show_source,
-                                  'standings': self._standings,
+                                  'rank': self._standings,
                                   'repeat': self._give_clue,
                                   'next': self._next_vote,
                                   }
@@ -436,6 +445,20 @@ class triviabot(irc.IRCClient):
         self._lc.stop()
         self._lc.start(config.WAIT_INTERVAL)
 
+    def _get_rank(self, user):
+        from future.utils import iteritems
+        sorted_scores = sorted(iteritems(self._scores),
+                               key=lambda d: d[1], reverse=True)
+        i=0
+        after = None
+        for rank, (player, score) in enumerate(sorted_scores, start=1):
+            if player == user:
+                return rank, score, after
+            after = player
+            i+=1
+            if i>200:
+                return None, None
+
     def _standings(self, args, user, channel):
         '''
         Tells the user the complete standings in the game.
@@ -446,7 +469,7 @@ class triviabot(irc.IRCClient):
                                key=lambda d: d[1], reverse=True)
 
         i = 0
-        end = int(args[0]) - 1 if len(args) else 9
+        end = min(19, max(0, int(args[0]) - 1 if len(args) and args[0].isdigit() else 9))
         for rank, (player, score) in enumerate(sorted_scores, start=1):
             formatted_score = "{}: {}: {}".format(rank, player, score)
             self._cmsg(user, formatted_score)
@@ -471,7 +494,7 @@ class triviabot(irc.IRCClient):
         while damaged_question:
             # randomly select file
             filename = choice(listdir(self._questions_dir))
-            fd = open(os.path.join(config.Q_DIR, filename))
+            fd = open(os.path.join(config.Q_DIR, filename),  encoding='utf8', errors='ignore')
             lines = fd.read().splitlines()
             myline = choice(lines)
             fd.close()
@@ -482,7 +505,6 @@ class triviabot(irc.IRCClient):
                 print(myline)
                 continue
             self._answer.set_answer(temp_answer.strip())
-            print("Choosed question")
             damaged_question = False
 
 
