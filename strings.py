@@ -1,20 +1,43 @@
 # -*- coding: utf-8 -*-
 EN = "en"
 RO = "ro"
+COLOR = "color"
 
+DEFAULT_COLOR = '13,06'
+#First number is foreground, second is background
+##############################
+# COLOR CODES
+##############################
+#0 	White 	
+#1 	Black 	
+#2 	Navy 	
+#3 	Green 	
+#4 	Red 	
+#5 	Maroon 	
+#6 	Purple 	
+#7 	Orange 	
+#8 	Yellow 	
+#9 	Light Green 
+#10 	Teal 	
+#11 	Cyan 	
+#12 	Royal blue 	
+#13 	Magenta 	
+#14 	Gray 	
+#15 	Light Gray 	
+##############################
 
 class Text:
     NEXT = {EN: "Next question:", RO: "Următoarea întrebare:"}
     CLUE = {EN: "Clue: {}", RO: "Pistă: {}"}
     QUESTION = {EN: "Question:", RO: "Întrebare:"}
     GIVE_CLUE = {EN: "Clue: {}", RO: "Pistă: {}"}
-    NO_ONE_GOT = {EN: "No one got it. The answer was: {}", RO: "Aşadar, nimeni nu a ştiut-o. Răspunsul era: {}"}
-    WELCOME = {EN: "Welcome to {}!", RO: "Bun-venit la {}!"}
+    NO_ONE_GOT = {EN: "No one got it. The answer was: {}", RO: "Aşadar, nimeni nu a ştiut-o. Răspunsul era: {}", COLOR: '04,00'}
+    WELCOME = {EN: "Welcome to {}!", RO: "Bun-venit la {}!", COLOR: "12,00"}
     HAVE_AN_ADMIN = {EN: "Have an admin start the game when you are ready.", RO: "Ca un admin să pornească jocul când toată lumea e gata."}
     HAVE_HELP = {EN: "For how to use this bot, just say !help or", RO: "Ca să vedeţi instrucţiunile, tastaţi !help sau trivia help."}
     HELP = {EN: "{} help."}
     RESPOND_ON_CHANNEL = {EN: "I'm sorry, answers must be given in the game channel.", RO: "Îmi pare rău dar trebuie să dai răspunsurile pe canalul jocului."}
-    USER_GOT_IT = {EN: "{} GOT IT!", RO: "{} A ŞTIUT-O!"}
+    USER_GOT_IT = {EN: "{} GOT IT!", RO: "{} A ŞTIUT-O!", COLOR: "02,00"}
     THE_ANSWER_WAS = {EN: "If there was any doubt, the correct answer was: {}", RO: "Dacă cumva aveaţi dubii, răspunsul corect era: {}"}
     POINT_ADDED = {EN: "{} point has been added to your score!", RO: "{} punct a fost adăugat la scorul tău!"}
     POINTS_ADDED = {EN: "{} points have been added to your score!", RO: "{} puncte au fost adăugate la scorul tău!"}
@@ -36,7 +59,7 @@ class Text:
     TIMMING = {EN: "{} has given the answer in {}.{} seconds.", RO: "{} a dat răspunsul corect în {}.{} secunde."}
     RANKING = {EN: "{} has now {} points and is the {}th in the ranking after {}.", RO: "{} are acum {} puncte şi este al {}-lea în clasament după {}."}
     NUMBER_ONE = {EN: "{} now has {} and is number one in the rankings.", RO: "{} are acum {} şi este pe locul întâi in clasament."}
-    RANK_OFF = {EN: "Rank was turned off"}
+    RANK_OFF = {EN: "Rank was turned off", COLOR: ''}
     RANK_ON = {EN: "Rank was turned on"}
 
 
@@ -45,9 +68,10 @@ def genTrans(lang):
     for k in dir(t):
         if not k.startswith("_"):
             o = getattr(Text, k)
+            cc = "{}{}".format('\003', o[COLOR] if COLOR in o else DEFAULT_COLOR)
             if lang in o:
-                setattr(t, k, o[lang])
+                setattr(t, k, "{}{}".format(cc, o[lang]))
             else:
-                setattr(t, k, o[EN])
+                setattr(t, k, "{}{}".format(cc, o[EN]))
 
     return t

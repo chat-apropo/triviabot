@@ -101,14 +101,13 @@ class triviabot(irc.IRCClient):
         """
         Write a colorized message.
         """
-
-        self.msg(dest, "{}{}".format(config.COLOR_CODE, msg))
+        #self.msg(dest, "{}{}".format(config.COLOR_CODE, msg))
+        self.msg(dest, msg)
 
     def _gmsg(self, msg):
         """
         Write a message to the channel playing the trivia game.
         """
-
         self._cmsg(self._game_channel, msg)
 
     def _new_question(self):
