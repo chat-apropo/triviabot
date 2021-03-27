@@ -18,6 +18,7 @@ ADMINS = ['admin']
 # ADMINS = ['admin','admin2']
 
 Q_DIR = './questions/'
+#URL = "http://www.storage.dot.org.es/trivia/questions.txt"
 
 SAVE_DIR = './savedata/'
 

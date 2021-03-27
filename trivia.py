@@ -28,6 +28,7 @@ import os
 import sys
 from datetime import datetime
 from os import execl, listdir, path, makedirs
+import urllib
 from random import choice
 from twisted.words.protocols import irc
 from twisted.internet import reactor
@@ -60,6 +61,7 @@ points = {0: 5,
           2: 2,
           3: 1
           }
+
 
 class triviabot(irc.IRCClient):
     '''
@@ -117,7 +119,7 @@ class triviabot(irc.IRCClient):
         self._get_new_question()
         self._current_points = points[self._clue_number]
         self._gmsg(text.NEXT)
-        self._gmsg(self._question)
+        self._gmsg(text.QUESTION_COLOR.format(self._question))
         self._gmsg(text.CLUE.format(self._answer.current_clue()))
         self._clue_number += 1
         self._start_time = datetime.now()
@@ -132,7 +134,7 @@ class triviabot(irc.IRCClient):
         elif self._clue_number < 4:
             self._current_points = points[self._clue_number]
             self._gmsg(text.QUESTION)
-            self._gmsg(self._question)
+            self._gmsg(text.QUESTION_COLOR.format(self._question))
             self._gmsg(text.GIVE_CLUE.format(self._answer.give_clue()))
             self._clue_number += 1
         # no one must have gotten it.
@@ -213,17 +215,18 @@ class triviabot(irc.IRCClient):
             self._gmsg(text.POINTS_ADDED.format(str(self._current_points)))
         self._clue_number = 0
 
-        rank, score, after = self._get_rank(user)      
+        rank, score, after = self._get_rank(user)
         if rank:
             if not after and rank == 1:
                 self._gmsg(text.NUMBER_ONE.format(user, score))
             else:
                 self._gmsg(text.RANKING.format(user, score, rank, after))
-            
-        time = datetime.now()-self._start_time
-        self._gmsg(text.TIMMING.format(user, time.seconds, round(time.microseconds/10000)))
 
-        #Restart loop
+        time = datetime.now()-self._start_time
+        self._gmsg(text.TIMMING.format(
+            user, time.seconds, round(time.microseconds/10000)))
+
+        # Restart loop
         self._lc.stop()
         self._lc.start(config.WAIT_INTERVAL)
 
@@ -266,8 +269,7 @@ class triviabot(irc.IRCClient):
         if b:
             self._cmsg(user, text.RANK_OFF)
         else:
-            self._cmsg(user, text.RANK_ON )
-
+            self._cmsg(user, text.RANK_ON)
 
     def select_command(self, command, args, user, channel):
         '''
@@ -290,7 +292,7 @@ class triviabot(irc.IRCClient):
                                 'start': self._start,
                                 'stop': self._stop,
                                 'save': self._save_game,
-                                'rankon': lambda  a, u, c: self.set_rank_block(False, a, u, c),
+                                'rankon': lambda a, u, c: self.set_rank_block(False, a, u, c),
                                 'rankoff': lambda a, u, c: self.set_rank_block(True, a, u, c),
                                 'skip': self._next_question
                                 }
@@ -459,14 +461,14 @@ class triviabot(irc.IRCClient):
         from future.utils import iteritems
         sorted_scores = sorted(iteritems(self._scores),
                                key=lambda d: d[1], reverse=True)
-        i=0
+        i = 0
         after = None
         for rank, (player, score) in enumerate(sorted_scores, start=1):
             if player == user:
                 return rank, score, after
             after = player
-            i+=1
-            if i>200:
+            i += 1
+            if i > 200:
                 return None, None
 
     def _standings(self, args, user, channel):
@@ -482,7 +484,8 @@ class triviabot(irc.IRCClient):
                                key=lambda d: d[1], reverse=True)
 
         i = 0
-        end = min(19, max(0, int(args[0]) - 1 if len(args) and args[0].isdigit() else 9))
+        end = min(
+            19, max(0, int(args[0]) - 1 if len(args) and args[0].isdigit() else 9))
         for rank, (player, score) in enumerate(sorted_scores, start=1):
             formatted_score = "{}: {}: {}".format(rank, player, score)
             self._cmsg(user, formatted_score)
@@ -495,8 +498,16 @@ class triviabot(irc.IRCClient):
             self._gmsg(text.NOT_PLAYING)
             return
         self._cmsg(channel, text.QUESTION)
-        self._cmsg(channel, self._question)
+        self._cmsg(channel, text.QUESTION_COLOR.format(self._question))
         self._cmsg(channel, text.CLUE.format(self._answer.current_clue()))
+
+    def load_file(self):
+        filename = choice(listdir(self._questions_dir))
+        fd = open(os.path.join(config.Q_DIR, filename),
+                  encoding='utf8', errors='ignore')
+        lines = fd.read().splitlines()
+        fd.close()
+        return lines
 
     def _get_new_question(self):
         '''
@@ -506,11 +517,18 @@ class triviabot(irc.IRCClient):
         damaged_question = True
         while damaged_question:
             # randomly select file
-            filename = choice(listdir(self._questions_dir))
-            fd = open(os.path.join(config.Q_DIR, filename),  encoding='utf8', errors='ignore')
-            lines = fd.read().splitlines()
-            myline = choice(lines)
-            fd.close()
+            if hasattr(config, "URL"):
+                url = config.URL
+                res = urllib.request.urlopen(url)
+                if res.getcode() == 200:
+                    print("Loading from ", url)
+                    lines = res.readlines()
+                else:
+                    lines = load_file()
+            else:
+                lines = load_file()
+            myline = choice(lines) 
+            myline = myline.decode() if type(myline) == bytes else myline
             try:
                 self._question, temp_answer = myline.split('`')
             except ValueError:
