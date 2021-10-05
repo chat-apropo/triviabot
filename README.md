@@ -54,3 +54,9 @@ License:
 --------
 
 Released under the GPLv3.
+
+
+Modifications:
+--------------
+
+The authors of these modifications are Gabriel Artigue and Matheus Fillipe (gartigue@gmx.com).
