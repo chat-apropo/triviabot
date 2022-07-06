@@ -3,3 +3,8 @@ savedata/*
 __pycache__/*
 *.pyc
 .ropeproject
+
+nohup.out
+questions/
+venv/
+*.zip
