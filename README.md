@@ -1,7 +1,7 @@
 triviabot
 =========
 
-A simple IRC trivia bot written in python using twisted.
+A IRC trivia bot written in python using twisted.
 
 Features
 --------
