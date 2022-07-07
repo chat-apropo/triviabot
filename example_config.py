@@ -6,27 +6,27 @@
 # Copy this file to 'config.py', then edit 'config.py' to
 # set your preferences.
 
-GAME_CHANNEL = '#triviachannel'
+GAME_CHANNEL = '#trivia'
 
 # Nick of person running this bot? (the nick included here will be
 # automatically added to the list of ADMINS)
 # It will be displayed to user when ?help option is run
-OWNER = 'bot_owner'
+OWNER = 'your_nick'
 
-ADMINS = ['admin']
-# or a comma separated list
-# ADMINS = ['admin','admin2']
+# or a comma separated list of nicks
+ADMINS = []
 
+# Directory the questions are stored at
 Q_DIR = './questions/'
-#URL = "http://www.storage.dot.org.es/trivia/questions.txt"
 
+# Directory the scores are stored at
 SAVE_DIR = './savedata/'
 
-IDENT_STRING = 'password'
+IDENT_STRING = 'x1x2x3x4x5iojfaJsi39'
 
 # Time (in seconds) between clues, and the wait time between questions.
 # If ?skip is used, the interval doesn't apply
-WAIT_INTERVAL = 30
+WAIT_INTERVAL = 10
 
 # Colorize the text so it contrasts with the channel text.
 # This makes it easier to play the game when people are chatting.
@@ -37,15 +37,19 @@ WAIT_INTERVAL = 30
 COLOR_CODE = '\00308,01'
 
 # How fast will the bot output messages to the channel
-LINE_RATE = 0.4
+LINE_RATE = 0.2
 
-DEFAULT_NICK = 'triviabot'
+DEFAULT_NICK = 'trivia'
 
-SERVER = 'irc.freenode.net'
+SERVER = 'irc.server.com'
 
 # Some servers support SSL, and some do not. If you have trouble connecting
 # to your IRC network, you may have to disable SSL or change the server port
 SERVER_PORT = 6667
-USE_SSL = "YES"
- 
-LANG = 'en'
+USE_SSL = "NO"
+
+# Language iso code. Create more translations at strings.py
+LANG = "en"
+
+# Script to be called at restart. Leave blank.
+UPDATE_SCRIPT = ""

@@ -215,7 +215,7 @@ class triviabot(irc.IRCClient):
 
         # Restart loop
         self._lc.stop()
-        self._lc.start(config.WAIT_INTERVAL)
+        self._lc.start(config.WAIT_INTERVAL, now=True)
 
     def ctcpQuery(self, user, channel, msg):
         """Responds to ctcp requests.
