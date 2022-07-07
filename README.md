@@ -122,6 +122,9 @@ You can create questions by adding files that will be recursively looked up insi
 THEME: questions text here?`answer now
 ```
 
+You can also just grab the questions from the upstream questions folder: https://github.com/rawsonj/triviabot/tree/master/questions
+
+
 * And now you can test run it
 
 ```bash
