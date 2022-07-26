@@ -53,3 +53,12 @@ LANG = "en"
 
 # Script to be called at restart. Leave blank.
 UPDATE_SCRIPT = ""
+
+### AUDIO MODE ####
+# In this mode the bot will DM the questions to a admin user that is supposed to be narrate it.
+# URL of the audio stream for audio mode 
+AUDIO_URL = "https://radio.dot.org.es/stream.ogg"
+# On audio mode this is the interval between questions
+AUDIO_WAIT_INTERVAL = 10
+# How much to wait before giving clues
+AUDIO_DELAY = 10

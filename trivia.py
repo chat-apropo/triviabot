@@ -83,6 +83,8 @@ class triviabot(irc.IRCClient):
         self._game_channel = config.GAME_CHANNEL
         self._current_points = 5
         self._questions_dir = config.Q_DIR
+        self._locutor_mode = False
+        self._locutor_nick = ''
         self._lc = LoopingCall(self._play_game)
         self._quit = False
         self._restarting = False
@@ -108,17 +110,36 @@ class triviabot(irc.IRCClient):
         """Write a message to the channel playing the trivia game."""
         self._cmsg(self._game_channel, msg)
 
+    def _delayed_start(self):
+        """Start for audio mode"""
+        self._clue_number = 1
+        self._start_time = datetime.now()
+        self._gmsg(text.CLUE.format(self._answer.current_clue()))
+        self._lc.start(
+            config.WAIT_INTERVAL if not self._locutor_mode else config.AUDIO_WAIT_INTERVAL, now=False)
+
     def _new_question(self):
         self._clue_number = 0
         self._votes = 0
         self._voters = []
         self._get_new_question()
         self._current_points = points[self._clue_number]
-        self._gmsg(text.NEXT)
-        self._gmsg(text.QUESTION_COLOR.format(self._question))
-        self._gmsg(text.CLUE.format(self._answer.current_clue()))
-        self._clue_number += 1
-        self._start_time = datetime.now()
+        if self._locutor_mode:
+            self._cmsg(self._locutor_nick, text.QUESTION)
+            self._cmsg(self._locutor_nick,
+                       text.QUESTION_COLOR.format(self._question))
+            self._cmsg(self._locutor_nick,
+                       f"{len(self._answer)} characters")
+            self._gmsg(text.BLUE_COLOR.format(f"--> {config.AUDIO_URL}"))
+            if self._lc.running:
+                self._lc.stop()
+            reactor.callLater(config.AUDIO_DELAY, self._delayed_start)
+        else:
+            self._gmsg(text.NEXT)
+            self._gmsg(text.QUESTION_COLOR.format(self._question))
+            self._gmsg(text.CLUE.format(self._answer.current_clue()))
+            self._clue_number += 1
+            self._start_time = datetime.now()
 
     def _play_game(self):
         """Implements the main loop of the game."""
@@ -127,8 +148,9 @@ class triviabot(irc.IRCClient):
         # we must be somewhere in between
         elif self._clue_number < 4:
             self._current_points = points[self._clue_number]
-            self._gmsg(text.QUESTION)
-            self._gmsg(text.QUESTION_COLOR.format(self._question))
+            if not self._locutor_mode:
+                self._gmsg(text.QUESTION)
+                self._gmsg(text.QUESTION_COLOR.format(self._question))
             self._gmsg(text.GIVE_CLUE.format(self._answer.give_clue()))
             self._clue_number += 1
         # no one must have gotten it.
@@ -215,7 +237,8 @@ class triviabot(irc.IRCClient):
 
         # Restart loop
         self._lc.stop()
-        self._lc.start(config.WAIT_INTERVAL, now=True)
+        self._lc.start(
+            config.WAIT_INTERVAL if not self._locutor_mode else config.AUDIO_WAIT_INTERVAL, now=True)
 
     def ctcpQuery(self, user, channel, msg):
         """Responds to ctcp requests.
@@ -280,7 +303,9 @@ class triviabot(irc.IRCClient):
                                 'save': self._save_game,
                                 'rankon': lambda a, u, c: self.set_rank_block(False, a, u, c),
                                 'rankoff': lambda a, u, c: self.set_rank_block(True, a, u, c),
-                                'skip': self._next_question
+                                'skip': self._next_question,
+                                'audio': self._audio,
+                                'text': self._text,
                                 }
         print(command, args, user, channel)
         try:
@@ -349,6 +374,20 @@ class triviabot(irc.IRCClient):
             self._gmsg(text.SEE_YOU)
             self._save_game()
             self.factory.running = False
+
+    def _audio(self, args, user, channel):
+        """Turns audio mode on."""
+        self._locutor_mode = True
+        self._locutor_nick = user
+        self._gmsg(text.AUDIO_ON)
+        self._cmsg(user, "------------------------------------------------")
+        self._new_question()
+
+    def _text(self, *args):
+        """Turns audio mode off."""
+        self._locutor_mode = False
+        self._gmsg(text.AUDIO_OFF)
+        self._new_question()
 
     def _save_game(self, *args):
         """Saves the game to the data directory."""
@@ -425,7 +464,8 @@ class triviabot(irc.IRCClient):
             self._answer.answer))
         self._clue_number = 0
         self._lc.stop()
-        self._lc.start(config.WAIT_INTERVAL)
+        self._lc.start(
+            config.WAIT_INTERVAL if not self._locutor_mode else config.AUDIO_WAIT_INTERVAL)
 
     def _get_rank(self, user):
         from future.utils import iteritems
