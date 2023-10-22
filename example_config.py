@@ -62,3 +62,34 @@ AUDIO_URL = "https://radio.dot.org.es/stream.ogg"
 AUDIO_WAIT_INTERVAL = 10
 # How much to wait before giving clues
 AUDIO_DELAY = 10
+
+# Messages  and annmouncements
+# List of messages to be displayed to the channel randomly picked line by line
+ANNOUNCEMENTS_TXT = "./messages.txt"
+# Interval between messages
+ANNOUNCEMENTS_DELAY = 60*4
+# Should the rank top 5 also be announced from time to time?
+MESSAGE_RANKING = True
+
+
+# Ranking system
+# Maximum points that can be awarded without tips
+MAX_POINTS = 10
+# Number of users from which we start the wealth tax for better distribution of points
+MIN_USERS_FOR_PRIVILEDGE = 15
+# Users are divided in 10 quantiles, each quantile has a different tax which is a fixed ammount of points to subtract from
+# MAX_POINTS. The tax is calculated as something like: ((MAX_POINTS + PRIVILEDGE) * (4 - N_OF_TIPS_GIVEN) / 5)
+# key is the quantile number, value is the PRIVILEDGE
+PRIVILEDGE = {
+    0: 0,
+    1: 1,
+    2: 2,
+    3: 3,
+    4: 4,
+    5: 5,
+    6: 6,
+    7: 7,
+    8: 8,
+    9: 9,
+    9: 9,
+}
