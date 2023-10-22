@@ -8,3 +8,4 @@ nohup.out
 questions/
 venv/
 *.zip
+messages.txt

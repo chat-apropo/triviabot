@@ -92,6 +92,19 @@ class triviabot(irc.IRCClient):
         self._votes = 0
         self._voters = []
         self.nickname = config.DEFAULT_NICK
+        self.load_announcements()
+
+    def load_announcements(self):
+        """Load messages"""
+        self._messages = []
+        if config.MESSAGE_RANKING:
+            self._messages.append(None)
+        try:
+            with open(config.ANNOUNCEMENTS_TXT, 'r') as f:
+                for message in f.readlines():
+                    self._messages.append(message.strip())
+        except FileNotFoundError:
+            print(f"No messages file found at {config.ANNOUNCEMENTS_TXT}")
 
     def _get_nickname(self):
         return self.factory.nickname
@@ -117,6 +130,18 @@ class triviabot(irc.IRCClient):
         self._gmsg(text.CLUE.format(self._answer.current_clue()))
         self._lc.start(
             config.WAIT_INTERVAL if not self._locutor_mode else config.AUDIO_WAIT_INTERVAL, now=False)
+
+    def _display_announcements(self):
+        """Display announcements to the channel."""
+        if self._messages:
+            m = choice(self._messages)
+            if m is None:  # we display ranking
+                self._standings(None, self._game_channel, None)
+            else:
+                self._gmsg(m)
+
+        self.load_announcements()
+        reactor.callLater(config.ANNOUNCEMENTS_DELAY, self._display_announcements)
 
     def _new_question(self):
         self._clue_number = 0
@@ -358,6 +383,7 @@ class triviabot(irc.IRCClient):
         if self._lc.running:
             return
         else:
+            reactor.callLater(config.ANNOUNCEMENTS_DELAY, self._display_announcements)
             self._lc.start(config.WAIT_INTERVAL)
             self.factory.running = True
 
@@ -487,16 +513,22 @@ class triviabot(irc.IRCClient):
             return
 
         from future.utils import iteritems
-        self._cmsg(user, text.STANDINGS)
+        if user:
+            self._cmsg(user, text.STANDINGS)
+        else:
+            self._gmsg(text.STANDINGS)
         sorted_scores = sorted(iteritems(self._scores),
                                key=lambda d: d[1], reverse=True)
 
         i = 0
         end = min(
-            19, max(0, int(args[0]) - 1 if len(args) and args[0].isdigit() else 9))
+            19, max(0, int(args[0]) - 1 if args and len(args) and args[0].isdigit() else 9))
         for rank, (player, score) in enumerate(sorted_scores, start=1):
             formatted_score = "{}: {}: {}".format(rank, player, score)
-            self._cmsg(user, formatted_score)
+            if user:
+                self._cmsg(user, formatted_score)
+            else:
+                self._gmsg(formatted_score)
             i += 1
             if i > end:
                 break
