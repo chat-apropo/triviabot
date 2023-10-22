@@ -238,7 +238,12 @@ class triviabot(irc.IRCClient):
         self._gmsg(text.USER_GOT_IT.format(user.upper()))
         self._gmsg(text.THE_ANSWER_WAS.format(self._answer.answer))
 
-        rank, score, after = self._get_rank(user)
+        rank_info = self._get_rank(user)
+        if rank_info is None:
+            rank = 0
+        else:
+            rank, _, _ = rank_info
+
         n_users = len(self._scores)
         if n_users > config.MIN_USERS_FOR_PRIVILEDGE:
             quantile = math.floor((rank - 1) / n_users * 10)
