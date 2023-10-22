@@ -21,6 +21,7 @@
 # players, wait some, then continue.
 #
 
+import math
 import json
 import os
 import string
@@ -57,10 +58,10 @@ try:
 except AttributeError:
     config.COLOR_CODE = ''
 
-points = {0: 5,
-          1: 3,
-          2: 2,
-          3: 1
+points = {0: 1,
+          1: 3/5,
+          2: 2/5,
+          3: 1/5,
           }
 
 
@@ -81,7 +82,6 @@ class triviabot(irc.IRCClient):
         self._admins = list(config.ADMINS)
         self._admins.append(config.OWNER)
         self._game_channel = config.GAME_CHANNEL
-        self._current_points = 5
         self._questions_dir = config.Q_DIR
         self._locutor_mode = False
         self._locutor_nick = ''
@@ -148,7 +148,6 @@ class triviabot(irc.IRCClient):
         self._votes = 0
         self._voters = []
         self._get_new_question()
-        self._current_points = points[self._clue_number]
         if self._locutor_mode:
             self._cmsg(self._locutor_nick, text.QUESTION)
             self._cmsg(self._locutor_nick,
@@ -172,7 +171,6 @@ class triviabot(irc.IRCClient):
             self._new_question()
         # we must be somewhere in between
         elif self._clue_number < 4:
-            self._current_points = points[self._clue_number]
             if not self._locutor_mode:
                 self._gmsg(text.QUESTION)
                 self._gmsg(text.QUESTION_COLOR.format(self._question))
@@ -239,14 +237,24 @@ class triviabot(irc.IRCClient):
             return
         self._gmsg(text.USER_GOT_IT.format(user.upper()))
         self._gmsg(text.THE_ANSWER_WAS.format(self._answer.answer))
-        try:
-            self._scores[user] += self._current_points
-        except KeyError:
-            self._scores[user] = self._current_points
-        if self._current_points == 1:
-            self._gmsg(text.POINT_ADDED.format(str(self._current_points)))
+
+        rank, score, after = self._get_rank(user)
+        n_users = len(self._scores)
+        if n_users > config.MIN_USERS_FOR_PRIVILEDGE:
+            quantile = math.floor((rank - 1) / n_users * 10)
+            priviledge = config.PRIVILEDGE[quantile]
         else:
-            self._gmsg(text.POINTS_ADDED.format(str(self._current_points)))
+            priviledge = 0
+
+        winner_points = int((config.MAX_POINTS + priviledge) * points[self._clue_number])
+        try:
+            self._scores[user] += winner_points + priviledge
+        except KeyError:
+            self._scores[user] = winner_points
+        if winner_points == 1:
+            self._gmsg(text.POINT_ADDED.format(str(winner_points)))
+        else:
+            self._gmsg(text.POINTS_ADDED.format(str(winner_points)))
         self._clue_number = 0
 
         rank, score, after = self._get_rank(user)
@@ -504,8 +512,6 @@ class triviabot(irc.IRCClient):
                 return rank, score, after
             after = player
             i += 1
-            if i > 200:
-                return None, None
 
     def _standings(self, args, user, channel):
         """Tells the user the complete standings in the game."""
