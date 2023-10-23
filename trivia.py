@@ -255,7 +255,7 @@ class triviabot(irc.IRCClient):
         else:
             priviledge = 0
 
-        winner_points = int((config.MAX_POINTS + priviledge) * points[min(self._clue_number, len(points))]) + priviledge
+        winner_points = int((config.MAX_POINTS + priviledge) * points[min(self._clue_number - 1, len(points) - 1)]) + priviledge
         if user in self._scores:
             self._scores[user] += winner_points
         else:
