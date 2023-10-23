@@ -238,24 +238,30 @@ class triviabot(irc.IRCClient):
         self._gmsg(text.USER_GOT_IT.format(user.upper()))
         self._gmsg(text.THE_ANSWER_WAS.format(self._answer.answer))
 
-        rank_info = self._get_rank(user)
-        if rank_info is None:
-            rank = 0
-        else:
-            rank, _, _ = rank_info
-
+        breakpoint()
         n_users = len(self._scores)
+        if user not in self._scores:
+            rank = n_users + 1
+            n_users += 1
+        else:
+            rank_info = self._get_rank(user)
+            if rank_info is None:
+                rank = len(self._scores) + 1
+            else:
+                rank, _, _ = rank_info
+
         if n_users > config.MIN_USERS_FOR_PRIVILEDGE:
-            quantile = math.floor((rank - 1) / n_users * 10)
+            quantile = min(math.floor((rank - 1) / n_users * 10), len(config.PRIVILEDGE) - 1)
             priviledge = config.PRIVILEDGE[quantile]
         else:
             priviledge = 0
 
-        winner_points = int((config.MAX_POINTS + priviledge) * points[self._clue_number])
-        try:
-            self._scores[user] += winner_points + priviledge
-        except KeyError:
+        winner_points = int((config.MAX_POINTS + priviledge) * points[self._clue_number]) + priviledge
+        if user in self._scores:
+            self._scores[user] += winner_points
+        else:
             self._scores[user] = winner_points
+
         if winner_points == 1:
             self._gmsg(text.POINT_ADDED.format(str(winner_points)))
         else:
