@@ -238,7 +238,6 @@ class triviabot(irc.IRCClient):
         self._gmsg(text.USER_GOT_IT.format(user.upper()))
         self._gmsg(text.THE_ANSWER_WAS.format(self._answer.answer))
 
-        breakpoint()
         n_users = len(self._scores)
         if user not in self._scores:
             rank = n_users + 1
@@ -256,7 +255,7 @@ class triviabot(irc.IRCClient):
         else:
             priviledge = 0
 
-        winner_points = int((config.MAX_POINTS + priviledge) * points[self._clue_number]) + priviledge
+        winner_points = int((config.MAX_POINTS + priviledge) * points[min(self._clue_number, len(points))]) + priviledge
         if user in self._scores:
             self._scores[user] += winner_points
         else:
