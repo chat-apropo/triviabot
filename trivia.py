@@ -537,16 +537,20 @@ class triviabot(irc.IRCClient):
                                key=lambda d: d[1], reverse=True)
 
         i = 0
-        end = min(
-            19, max(0, int(args[0]) - 1 if args and len(args) and args[0].isdigit() else 9))
+        end = max(0, int(args[0]) - 1 if args and len(args) and args[0].isdigit() else 9)
+        formatted_score = ""
         for rank, (player, score) in enumerate(sorted_scores, start=1):
-            formatted_score = "{}: {}: {}".format(rank, player, score)
-            if user:
-                self._cmsg(user, formatted_score)
+            formatted_score += "{}: {}: {}".format(rank, player, score)
+            if i % 5 == 0:
+                if user:
+                    self._cmsg(user, formatted_score)
+                else:
+                    self._gmsg(formatted_score)
+                formatted_score = ""
             else:
-                self._gmsg(formatted_score)
+                formatted_score += " | "
             i += 1
-            if i > end:
+            if i >= end:
                 break
 
     def _give_clue(self, args, user, channel):
