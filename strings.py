@@ -31,11 +31,11 @@ DEFAULT_COLOR = '13,06'
 
 class Text:
     NEXT = {EN: "Next question:", RO: "Următoarea întrebare:", COLOR: "08,06"}
-    CLUE = {EN: "Clue: {}", RO: "Pistă: {}", COLOR: "02,00"}
+    CLUE = {EN: "Clue: {}", RO: "Indiciu: {}", COLOR: "02,00"}
     QUESTION = {EN: "Question:", RO: "Întrebare:", COLOR: "08,01"}
     QUESTION_COLOR = {EN: "{}", COLOR: "08,01"}
     BLUE_COLOR = {EN: "{}", COLOR: "12,01"}
-    GIVE_CLUE = {EN: "Clue: {}", RO: "Pistă: {}", COLOR: "02,00"}
+    GIVE_CLUE = {EN: "Clue: {}", RO: "Indiciu: {}", COLOR: "02,00"}
     NO_ONE_GOT = {EN: "No one got it. The answer was: {}",
                   RO: "Aşadar, nimeni nu a ştiut-o. Răspunsul era: {}", COLOR: '09,01'}
     WELCOME = {EN: "Welcome to {}!", RO: "Bun-venit la {}!", COLOR: "08,01"}
