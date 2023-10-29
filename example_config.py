@@ -73,23 +73,12 @@ MESSAGE_RANKING = True
 
 
 # Ranking system
-# Maximum points that can be awarded without tips
-MAX_POINTS = 10
-# Number of users from which we start the wealth tax for better distribution of points
+# Maximum points that can be awarded without priviledge
+BASE_POINTS = 10
+# Number of users from which we start the wealth tax for better distribution of points. Set to None to disable
 MIN_USERS_FOR_PRIVILEDGE = 15
-# Users are divided in 10 quantiles, each quantile has a different tax which is a fixed ammount of points to subtract from
-# MAX_POINTS. The tax is calculated as something like: ((MAX_POINTS + PRIVILEDGE) * (4 - N_OF_TIPS_GIVEN) / 5)
-# key is the quantile number, value is the PRIVILEDGE
-PRIVILEDGE = {
-    0: 0,
-    1: 1,
-    2: 2,
-    3: 3,
-    4: 4,
-    5: 5,
-    6: 6,
-    7: 7,
-    8: 8,
-    9: 9,
-    9: 9,
-}
+# Maximum points that can be awarded with priviledge. Set to "increasing" to have it increase with the number of users
+# With "increasing" it will compute MAX_POINTS proportionally to the average score of the top CONTROL_GROUP users
+MAX_POINTS = 20
+# 0.1 Means that the first 10% in the rank will be used as control group and will not have the bonus
+CONTROL_GROUP = 0.1
