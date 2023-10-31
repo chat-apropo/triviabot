@@ -270,7 +270,7 @@ class triviabot(irc.IRCClient):
         if config.MIN_USERS_FOR_PRIVILEDGE is not None and n_players > config.MIN_USERS_FOR_PRIVILEDGE:
             if config.MAX_POINTS == "increasing":
                 max_points = max(self._average_score(
-                    quantile=config.CONTROL_GROUP) / (config.BASE_POINTS * 2), config.BASE_POINTS * 1.5)
+                    quantile=config.CONTROL_GROUP) / (config.BASE_POINTS * 6), config.BASE_POINTS * 1.5)
             else:
                 max_points = config.MAX_POINTS
 

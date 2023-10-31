@@ -80,5 +80,5 @@ MIN_USERS_FOR_PRIVILEDGE = 15
 # Maximum points that can be awarded with priviledge. Set to "increasing" to have it increase with the number of users
 # With "increasing" it will compute MAX_POINTS proportionally to the average score of the top CONTROL_GROUP users
 MAX_POINTS = 20
-# 0.1 Means that the first 10% in the rank will be used as control group and will not have the bonus
+# 0.1 Means that the first 10% in the rank will be used as control group and will not have the bonus. Only used if MAX_POINTS is "increasing"
 CONTROL_GROUP = 0.1
