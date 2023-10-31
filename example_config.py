@@ -75,10 +75,10 @@ MESSAGE_RANKING = True
 # Ranking system
 # Maximum points that can be awarded without priviledge
 BASE_POINTS = 10
-# Number of users from which we start the wealth tax for better distribution of points. Set to None to disable
+# Number of users from which we start applying progressive points system. Set to None to disable this feature altogether.
 MIN_USERS_FOR_PRIVILEDGE = 15
-# Maximum points that can be awarded with priviledge. Set to "increasing" to have it increase with the number of users
-# With "increasing" it will compute MAX_POINTS proportionally to the average score of the top CONTROL_GROUP users
-MAX_POINTS = 20
-# 0.1 Means that the first 10% in the rank will be used as control group and will not have the bonus. Only used if MAX_POINTS is "increasing"
-CONTROL_GROUP = 0.1
+# Maximum points that can be awarded with priviledge interpolated between newcommers and UNPRIVILEDGED_GROUP. Set to "increasing" to have it increase with the number of users
+# With "increasing" it will compute MAX_POINTS proportionally to the average score of the top CONTROL_GROUP users.
+MAX_POINTS = "increasing"
+# 10 Means that the top 10 users will be used to compute the average score for increasing max points and don't receive any extra points
+UNPRIVILEDGED_GROUP = 10

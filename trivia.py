@@ -230,17 +230,17 @@ class triviabot(irc.IRCClient):
             print(e)
             return
 
-    def _average_score(self, quantile=None):
+    def _average_score(self, top_users=None):
         """Computes and outputs the average score users."""
-        assert quantile is None or 1 > quantile > 0
-        if quantile is None:
+        if top_users is None:
             s = sum(self._scores.values())
             n = len(self._scores)
         else:
             from future.utils import iteritems
             sorted_scores = sorted(
                 iteritems(self._scores), key=lambda d: d[1], reverse=True)
-            group = sorted_scores[:round(len(sorted_scores) * quantile)]
+            # Only the first top_users are considered.
+            group = sorted_scores[:top_users]
             n = len(group)
             s = sum([score for _, score in group])
 
@@ -270,11 +270,11 @@ class triviabot(irc.IRCClient):
         if config.MIN_USERS_FOR_PRIVILEDGE is not None and n_players > config.MIN_USERS_FOR_PRIVILEDGE:
             if config.MAX_POINTS == "increasing":
                 max_points = max(self._average_score(
-                    quantile=config.CONTROL_GROUP) / (config.BASE_POINTS * 6), config.BASE_POINTS * 1.5)
+                    top_users=config.UNPRIVILEDGED_GROUP) / (config.BASE_POINTS * 6), config.BASE_POINTS * 1.5)
             else:
                 max_points = config.MAX_POINTS
 
-            base_points = max(float(np.interp(rank, [(n_players * config.CONTROL_GROUP), n_players], [
+            base_points = max(float(np.interp(rank, [config.UNPRIVILEDGED_GROUP, n_players], [
                               config.BASE_POINTS, max_points])), config.BASE_POINTS)
             self._gmsg(
                 f"The max points for the least ranked user is {int(max_points)}.")
