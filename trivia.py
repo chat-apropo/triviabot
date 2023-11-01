@@ -31,7 +31,6 @@ from datetime import datetime
 from os import execl, listdir, path
 from random import choice
 
-import numpy as np
 from twisted.internet import reactor
 from twisted.internet.protocol import ClientFactory
 from twisted.internet.task import LoopingCall
@@ -40,6 +39,7 @@ from twisted.words.protocols import irc
 import config
 from lib.answer import Answer
 from strings import genTrans
+from utils import interp
 
 text = genTrans(config.LANG)
 
@@ -274,8 +274,7 @@ class triviabot(irc.IRCClient):
             else:
                 max_points = config.MAX_POINTS
 
-            base_points = max(float(np.interp(rank, [config.UNPRIVILEDGED_GROUP, n_players], [
-                              config.BASE_POINTS, max_points])), config.BASE_POINTS)
+            base_points = max(float(interp(rank, config.UNPRIVILEDGED_GROUP, n_players, config.BASE_POINTS, max_points)), config.BASE_POINTS)
             self._gmsg(
                 f"The max points for the least ranked user is {int(max_points)}.")
 
