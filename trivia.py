@@ -223,7 +223,7 @@ class triviabot(irc.IRCClient):
                 return
             # if not, try to match the message to the answer.
             else:
-                if msg.lower().strip() == self._answer.answer.lower():
+                if msg.casefold().strip() == self._answer.answer.casefold().strip():
                     self._winner(user, channel)
                     self._save_game()
         except Exception as e:
