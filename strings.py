@@ -97,6 +97,8 @@ class Text:
                 RO: "Clasamentul nu este disponibil chiar acum.", COLOR: "11,01"}
     RANK_ON = {EN: "Rank was turned on.",
                RO: "Puteţi da comanda ca să vedeţi clasamentul.", COLOR: "11,01"}
+    MAX_POINT_ANNOUNCE = {EN: "Points taken now by dead last player: {}",
+                          RO: "Puncte luate de către ultimul jucător din clasament: {}", COLOR: "12,01"}
 
 
 def genTrans(lang):

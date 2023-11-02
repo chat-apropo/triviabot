@@ -269,14 +269,14 @@ class triviabot(irc.IRCClient):
         base_points = config.BASE_POINTS
         if config.MIN_USERS_FOR_PRIVILEDGE is not None and n_players > config.MIN_USERS_FOR_PRIVILEDGE:
             if config.MAX_POINTS == "increasing":
-                max_points = max(self._average_score(
-                    top_users=config.UNPRIVILEDGED_GROUP) / (config.BASE_POINTS * 6), config.BASE_POINTS * 1.5)
+                max_points = int(max(self._average_score(
+                    top_users=config.UNPRIVILEDGED_GROUP) / (config.BASE_POINTS * 6), config.BASE_POINTS * 1.5))
             else:
                 max_points = config.MAX_POINTS
 
-            base_points = max(float(interp(rank, config.UNPRIVILEDGED_GROUP, n_players, config.BASE_POINTS, max_points)), config.BASE_POINTS)
-            self._gmsg(
-                f"The max points for the least ranked user is {int(max_points)}.")
+            base_points = max(float(interp(rank, config.UNPRIVILEDGED_GROUP,
+                              n_players, config.BASE_POINTS, max_points)), config.BASE_POINTS)
+            self._gmsg(text.MAX_POINT_ANNOUNCE.format(max_points))
 
         winner_points = int(max(base_points, config.BASE_POINTS)
                             * points[min(self._clue_number - 1, len(points) - 1)])
