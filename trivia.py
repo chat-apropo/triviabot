@@ -39,6 +39,7 @@ from twisted.words.protocols import irc
 import config
 from lib.answer import Answer
 from strings import genTrans
+from utils import interp
 
 text = genTrans(config.LANG)
 
@@ -57,10 +58,10 @@ try:
 except AttributeError:
     config.COLOR_CODE = ''
 
-points = {0: 5,
-          1: 3,
-          2: 2,
-          3: 1
+points = {0: 1,
+          1: 3/5,
+          2: 2/5,
+          3: 1/5,
           }
 
 
@@ -81,7 +82,6 @@ class triviabot(irc.IRCClient):
         self._admins = list(config.ADMINS)
         self._admins.append(config.OWNER)
         self._game_channel = config.GAME_CHANNEL
-        self._current_points = 5
         self._questions_dir = config.Q_DIR
         self._locutor_mode = False
         self._locutor_nick = ''
@@ -95,7 +95,7 @@ class triviabot(irc.IRCClient):
         self.load_announcements()
 
     def load_announcements(self):
-        """Load messages"""
+        """Load messages."""
         self._messages = []
         if config.MESSAGE_RANKING:
             self._messages.append(None)
@@ -124,7 +124,7 @@ class triviabot(irc.IRCClient):
         self._cmsg(self._game_channel, msg)
 
     def _delayed_start(self):
-        """Start for audio mode"""
+        """Start for audio mode."""
         self._clue_number = 1
         self._start_time = datetime.now()
         self._gmsg(text.CLUE.format(self._answer.current_clue()))
@@ -141,14 +141,14 @@ class triviabot(irc.IRCClient):
                 self._gmsg(m)
 
         self.load_announcements()
-        reactor.callLater(config.ANNOUNCEMENTS_DELAY, self._display_announcements)
+        reactor.callLater(config.ANNOUNCEMENTS_DELAY,
+                          self._display_announcements)
 
     def _new_question(self):
         self._clue_number = 0
         self._votes = 0
         self._voters = []
         self._get_new_question()
-        self._current_points = points[self._clue_number]
         if self._locutor_mode:
             self._cmsg(self._locutor_nick, text.QUESTION)
             self._cmsg(self._locutor_nick,
@@ -172,7 +172,6 @@ class triviabot(irc.IRCClient):
             self._new_question()
         # we must be somewhere in between
         elif self._clue_number < 4:
-            self._current_points = points[self._clue_number]
             if not self._locutor_mode:
                 self._gmsg(text.QUESTION)
                 self._gmsg(text.QUESTION_COLOR.format(self._question))
@@ -224,12 +223,28 @@ class triviabot(irc.IRCClient):
                 return
             # if not, try to match the message to the answer.
             else:
-                if msg.lower().strip() == self._answer.answer.lower():
+                if msg.casefold().strip() == self._answer.answer.casefold().strip():
                     self._winner(user, channel)
                     self._save_game()
         except Exception as e:
             print(e)
             return
+
+    def _average_score(self, top_users=None):
+        """Computes and outputs the average score users."""
+        if top_users is None:
+            s = sum(self._scores.values())
+            n = len(self._scores)
+        else:
+            from future.utils import iteritems
+            sorted_scores = sorted(
+                iteritems(self._scores), key=lambda d: d[1], reverse=True)
+            # Only the first top_users are considered.
+            group = sorted_scores[:top_users]
+            n = len(group)
+            s = sum([score for _, score in group])
+
+        return s / n
 
     def _winner(self, user, channel):
         """Congratulates the winner for guessing correctly and assigns points
@@ -239,14 +254,42 @@ class triviabot(irc.IRCClient):
             return
         self._gmsg(text.USER_GOT_IT.format(user.upper()))
         self._gmsg(text.THE_ANSWER_WAS.format(self._answer.answer))
-        try:
-            self._scores[user] += self._current_points
-        except KeyError:
-            self._scores[user] = self._current_points
-        if self._current_points == 1:
-            self._gmsg(text.POINT_ADDED.format(str(self._current_points)))
+
+        n_players = len(self._scores)
+        if user not in self._scores:
+            rank = n_players + 1
+            n_players += 1
         else:
-            self._gmsg(text.POINTS_ADDED.format(str(self._current_points)))
+            rank_info = self._get_rank(user)
+            if rank_info is None:
+                rank = len(self._scores) + 1
+            else:
+                rank, _, _ = rank_info
+
+        base_points = config.BASE_POINTS
+        if config.MIN_USERS_FOR_PRIVILEDGE is not None and n_players > config.MIN_USERS_FOR_PRIVILEDGE:
+            if config.MAX_POINTS == "increasing":
+                max_points = int(max(self._average_score(
+                    top_users=config.UNPRIVILEDGED_GROUP) / (config.BASE_POINTS * 6), config.BASE_POINTS * 1.5))
+            else:
+                max_points = config.MAX_POINTS
+
+            base_points = max(float(interp(rank, config.UNPRIVILEDGED_GROUP,
+                              n_players, config.BASE_POINTS, max_points)), config.BASE_POINTS)
+            self._gmsg(text.MAX_POINT_ANNOUNCE.format(max_points))
+
+        winner_points = int(max(base_points, config.BASE_POINTS)
+                            * points[min(self._clue_number - 1, len(points) - 1)])
+
+        if user in self._scores:
+            self._scores[user] += winner_points
+        else:
+            self._scores[user] = winner_points
+
+        if winner_points == 1:
+            self._gmsg(text.POINT_ADDED.format(str(winner_points)))
+        else:
+            self._gmsg(text.POINTS_ADDED.format(str(winner_points)))
         self._clue_number = 0
 
         rank, score, after = self._get_rank(user)
@@ -383,7 +426,8 @@ class triviabot(irc.IRCClient):
         if self._lc.running:
             return
         else:
-            reactor.callLater(config.ANNOUNCEMENTS_DELAY, self._display_announcements)
+            reactor.callLater(config.ANNOUNCEMENTS_DELAY,
+                              self._display_announcements)
             self._lc.start(config.WAIT_INTERVAL)
             self.factory.running = True
 
@@ -504,8 +548,6 @@ class triviabot(irc.IRCClient):
                 return rank, score, after
             after = player
             i += 1
-            if i > 200:
-                return None, None
 
     def _standings(self, args, user, channel):
         """Tells the user the complete standings in the game."""
@@ -521,16 +563,21 @@ class triviabot(irc.IRCClient):
                                key=lambda d: d[1], reverse=True)
 
         i = 0
-        end = min(
-            19, max(0, int(args[0]) - 1 if args and len(args) and args[0].isdigit() else 9))
+        end = max(0, int(args[0]) - 1 if args and len(args)
+                  and args[0].isdigit() else 9)
+        formatted_score = ""
         for rank, (player, score) in enumerate(sorted_scores, start=1):
-            formatted_score = "{}: {}: {}".format(rank, player, score)
-            if user:
-                self._cmsg(user, formatted_score)
+            formatted_score += "{}: {}: {}".format(rank, player, score)
+            if i % 5 == 0:
+                if user:
+                    self._cmsg(user, formatted_score)
+                else:
+                    self._gmsg(formatted_score)
+                formatted_score = ""
             else:
-                self._gmsg(formatted_score)
+                formatted_score += " | "
             i += 1
-            if i > end:
+            if i >= end:
                 break
 
     def _give_clue(self, args, user, channel):

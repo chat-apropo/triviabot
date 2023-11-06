@@ -62,3 +62,23 @@ AUDIO_URL = "https://radio.dot.org.es/stream.ogg"
 AUDIO_WAIT_INTERVAL = 10
 # How much to wait before giving clues
 AUDIO_DELAY = 10
+
+# Messages  and annmouncements
+# List of messages to be displayed to the channel randomly picked line by line
+ANNOUNCEMENTS_TXT = "./messages.txt"
+# Interval between messages
+ANNOUNCEMENTS_DELAY = 60*4
+# Should the rank top 5 also be announced from time to time?
+MESSAGE_RANKING = True
+
+
+# Ranking system
+# Maximum points that can be awarded without priviledge
+BASE_POINTS = 10
+# Number of users from which we start applying progressive points system. Set to None to disable this feature altogether.
+MIN_USERS_FOR_PRIVILEDGE = 15
+# Maximum points that can be awarded with priviledge interpolated between newcommers and UNPRIVILEDGED_GROUP. Set to "increasing" to have it increase with the number of users
+# With "increasing" it will compute MAX_POINTS proportionally to the average score of the top CONTROL_GROUP users.
+MAX_POINTS = "increasing"
+# 10 Means that the top 10 users will be used to compute the average score for increasing max points and don't receive any extra points
+UNPRIVILEDGED_GROUP = 10
