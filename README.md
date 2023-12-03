@@ -173,3 +173,9 @@ The bot has a nice `!help` command that will PM you with the commands you are al
                             'rankoff'
                             'skip'
                             }
+
+You can specify a custom config passing it to the script as the first argument. This should be a python file like `example_config.py` and needs to reside in the same directory as `trivia.py`:
+
+```sh
+python trivia.py config_en.py
+```

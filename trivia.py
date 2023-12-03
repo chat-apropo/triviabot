@@ -38,7 +38,21 @@ from twisted.internet.task import LoopingCall
 from twisted.python.log import startLogging
 from twisted.words.protocols import irc
 
-import config
+if len(sys.argv) > 1:
+    import importlib
+
+    config_file = sys.argv[1]
+    if os.path.isfile(config_file):
+        try:
+            config = importlib.import_module(os.path.splitext(config_file)[0])
+        except ImportError:
+            print("Error importing config file.")
+            sys.exit(1)
+    else:
+        raise FileNotFoundError("Config file not found.")
+else:
+    import config
+
 from lib.answer import Answer
 from strings import genTrans
 from utils import interp
