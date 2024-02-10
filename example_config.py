@@ -16,6 +16,9 @@ OWNER = 'your_nick'
 # or a comma separated list of nicks
 ADMINS = []
 
+# Automatically attempt to OP users in admin list
+AUTO_OP_ADMINS = True
+
 # Directory the questions are stored at
 Q_DIR = './questions/'
 
@@ -82,3 +85,20 @@ MIN_USERS_FOR_PRIVILEDGE = 15
 MAX_POINTS = "increasing"
 # 10 Means that the top 10 users will be used to compute the average score for increasing max points and don't receive any extra points
 UNPRIVILEDGED_GROUP = 10
+
+
+# Rewarding system.
+# Set to true to enable it
+ENABLE_REWARDS = False
+# Keys are the minimum rank required for reward and the keys are the IRC modes. The top X users will be rewarded with the MODE.
+RANK_REWARDS_MAP = {
+    10: "o",
+    20: "h",
+    30: "v",
+}
+# Streak rewards. Works the same way but the values refer to the number of consecutive correct answers
+STREAK_REWARDS_MAP = {
+    4: "o",
+    2: "h",
+    1: "v",
+}

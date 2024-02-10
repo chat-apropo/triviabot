@@ -200,6 +200,21 @@ class Text:
         RO: "{}, contul tău este îngheţat acum, ca pedeapsă aceste puncte NU o să urce în scorul tău!",
         COLOR: "08,04",
     }
+    ON_ADMIN_OP_JOIN = {
+        EN: "{} has just joined the channel and gets ircop status!",
+        RO: "{} a intrat în canalul trivia şi primeşte op!",
+        COLOR: "07,01",
+    }
+    ON_RANK_MODE_REWARD = {
+        EN: "{} is an outstanding trivia player and therefore gets +{} status!",
+        RO: "{} este un jucător de trivia desăvârşit şi din această cauză primeşte +{}!",
+        COLOR: "11,01",
+    }
+    ON_STREAK_MODE_REWARD = {
+        EN: "{} gets status +{} for their outstanding series of correct answers in a row!",
+        RO: "{} primeşte +{} pentru excelenta serie de răspunsuri corecte la rând!",
+        COLOR: "11,01",
+    }
 
 
 def genTrans(lang):

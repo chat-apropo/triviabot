@@ -26,6 +26,7 @@ import os
 import string
 import subprocess
 import sys
+from typing import Optional
 import urllib
 from datetime import datetime
 from os import execl, listdir, path
@@ -82,6 +83,12 @@ points = {
 }
 
 
+def is_higher_mode(mode1: str, mode2: Optional[str]) -> bool:
+    """Check if mode1 is higher than mode2."""
+    modes = ["v", "h", "o", "a", "q"]
+    return mode2 is None or modes.index(mode1) > modes.index(mode2)
+
+
 class triviabot(irc.IRCClient):
     """This is the irc bot portion of the trivia bot.
 
@@ -94,6 +101,8 @@ class triviabot(irc.IRCClient):
         self._answer = Answer()
         self._question = ""
         self._scores = {}
+        self._streak = {}
+        self._rewarded_modes = {}
         self._clue_number = 0
         self._block_rank = False
         self._admins = list(config.ADMINS)
@@ -194,6 +203,7 @@ class triviabot(irc.IRCClient):
         # no one must have gotten it.
         else:
             self._gmsg(text.NO_ONE_GOT.format(self._answer.answer))
+            self.reest_streak()
             self._new_question()
 
     def signedOn(self):
@@ -244,6 +254,25 @@ class triviabot(irc.IRCClient):
             print(e)
             return
 
+    def userJoined(self, user, channel):
+        """Called when I see another user joining a channel."""
+        if user in self._rewarded_modes:
+            del self._rewarded_modes[user]
+
+        if channel != self._game_channel:
+            return
+
+        if config.AUTO_OP_ADMINS and user in config.ADMINS:
+            self.mode(self._game_channel, True, "o", user=user)
+            self._rewarded_modes[user] = "o"
+            return
+
+        if user in self._scores:
+            r = self._get_rank(user)
+            if r is not None:
+                rank, _, _ = r
+                self._check_rank_rewards(user, rank)
+
     def _freeze(self, args, user, channel):
         """Freezes a nick from increasing its score."""
         nick = args[0].strip()
@@ -268,6 +297,29 @@ class triviabot(irc.IRCClient):
     def _frostlist(self, args, user, channel):
         """Lists all frozen nicks."""
         self._cmsg(user, "The following users have frozen scores: " + ", ".join(self._frost_nicks))
+
+    def _check_rank_rewards(self, user, rank) -> bool:
+        """Check for rank rewarding."""
+        if not config.ENABLE_REWARDS:
+            return False
+
+        aquired_mode = None
+        aquired_rank = None
+        for required_rank, mode in config.RANK_REWARDS_MAP.items():
+            if rank < required_rank and (aquired_rank is None or aquired_rank > required_rank):
+                aquired_rank = required_rank
+                aquired_mode = mode
+
+        if aquired_mode is not None:
+            if not is_higher_mode(aquired_mode, self._rewarded_modes.get(user)):
+                return False
+
+            self._gmsg(text.ON_RANK_MODE_REWARD.format(user, aquired_mode))
+            self.mode(self._game_channel, True, aquired_mode, user=user)
+            self._rewarded_modes[user] = aquired_mode
+            return True
+
+        return False
 
     def _average_score(self, top_users=None):
         """Computes and outputs the average score users."""
@@ -327,12 +379,37 @@ class triviabot(irc.IRCClient):
         else:
             self._gmsg(text.POINTS_ADDED.format(str(winner_points)))
 
+        had_rank_reward = False
         rank, score, after = self._get_rank(user)
         if rank:
             if not after and rank == 1:
                 self._gmsg(text.NUMBER_ONE.format(user, score))
             else:
                 self._gmsg(text.RANKING.format(user, score, rank, after))
+            had_rank_reward = self._check_rank_rewards(user, rank)
+
+        self.reest_streak(user)
+        if user in self._streak:
+            self._streak[user] += 1
+        else:
+            self._streak[user] = 1
+
+        if config.ENABLE_REWARDS and not had_rank_reward:
+            streak = self._streak[user]
+            if streak in config.STREAK_REWARDS_MAP:
+                mode = config.STREAK_REWARDS_MAP[streak]
+
+                if is_higher_mode(mode, self._rewarded_modes.get(user)):
+                    self._gmsg(text.ON_STREAK_MODE_REWARD.format(user, mode))
+                    self.mode(self._game_channel, True, mode, user=user)
+                    self._rewarded_modes[user] = mode
+
+    def reest_streak(self, keep_user: Optional[str] = None):
+        """Resets streak of all users, if keep_user is not None, it will keep the streak of that user."""
+        for user in list(self._streak.keys()):
+            if user == keep_user:
+                continue
+            del self._streak[user]
 
     def _winner(self, user, channel):
         """Congratulates the winner for guessing correctly and assigns points
@@ -604,6 +681,7 @@ class triviabot(irc.IRCClient):
             return
         self._gmsg(text.SKIPPED_THE_ANSWER_WAS.format(self._answer.answer))
         self._clue_number = 0
+        self.reest_streak()
         self._lc.stop()
         self._lc.start(config.WAIT_INTERVAL if not self._locutor_mode else config.AUDIO_WAIT_INTERVAL)
 
